@@ -12,7 +12,11 @@ public class UserService implements IUserService {
   @Autowired
   private UUserMapper userMapper;
   
-  public UUser findUserByUserName(String username){
-    return userMapper.selectAllUser().get(0);
+  @Override
+  public UUser findUserByUserNameAndPwd(String username, String password) {
+    UUser user = new UUser();
+    user.setNickname(username);
+    user.setPswd(password);
+    return userMapper.findUserByUserNameAndPwd(user);
   }
 }

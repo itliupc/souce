@@ -1,5 +1,13 @@
 package com.demo.controller;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.apache.shiro.SecurityUtils;
+import org.apache.shiro.authc.UsernamePasswordToken;
+import org.apache.shiro.web.subject.WebSubject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
@@ -16,7 +24,7 @@ public class AppController {
     @Autowired
     private IUserService userService;
     
-    @RequestMapping("/")
+    @RequestMapping("/login")
     public String root(ModelMap map) {
       return "login";  
     }
@@ -27,16 +35,25 @@ public class AppController {
     }
     
     
-    @RequestMapping("/login")
+    @RequestMapping(value="/ajaxLogin", method = RequestMethod.POST)
     @ResponseBody
-    public String login(String username, String password) {
-      return "Success";    
+    public Map<String, Object> ajaxLogin(HttpServletRequest request, String username, String password) {
+      Map<String, Object> resultMap = new HashMap<String, Object>();
+      UsernamePasswordToken uptoken =
+          new UsernamePasswordToken(username, password, false);
+      WebSubject subject = (WebSubject) SecurityUtils.getSubject();
+      subject.login(uptoken);
+      
+      resultMap.put("contentPath", request.getContextPath());
+      resultMap.put("username", username.trim());
+      resultMap.put("sessionId", subject.getSession().getId());
+      return resultMap;    
     }
     
     @RequestMapping("/user")
     @ResponseBody
     public UUser allUser(@RequestParam("username") String username) {
      
-      return userService.findUserByUserName(username);  
+      return null;  
     }
 }

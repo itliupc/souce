@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html>
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
@@ -12,14 +13,16 @@
 			var username = $("input[name='username']").val();
 			var password = $("input[name='password']").val();
 			 $.ajax({
-			      url: '/login',
+			      url: '/ajaxLogin',
 			      dataType: "json",
 			      data: {"username": username,"password":password},
 			      type: "POST",
+			      async:false,
 			      success: function (data) {
-			    	  debugger
-			    	  alert();
-			    	window.location.href="/index";
+			    	 sessionStorage.setItem("contentPath",data.contentPath);
+			    	 sessionStorage.setItem("username",data.username);
+			    	 sessionStorage.setItem("sessionId",data.sessionId);
+			    	 window.location.href="/index";
 			     }
 			  });
 		}

@@ -188,8 +188,10 @@
     where id = #{id,jdbcType=BIGINT}
   </update>
   
-  <select id="selectAllUser" resultType="com.demo.entity.UUser">
-	select u.id, u.nickname, u.email
+  
+  <select id="findUserByUserNameAndPwd" parameterType="com.demo.entity.UUser" resultType="com.demo.entity.UUser">
+	select u.id, u.pswd, u.nickname, u.email, u.status
 	from u_user u
+	where u.nickname=#{nickname,jdbcType=VARCHAR} AND pswd = #{pswd,jdbcType=VARCHAR}
   </select>
 </mapper>

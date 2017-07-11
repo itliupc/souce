@@ -25,6 +25,6 @@ public interface UUserMapper {
 
 //	List<URoleBo> selectRoleByUserId(Long id);
 	
-	List<UUser> selectAllUser();
+	UUser findUserByUserNameAndPwd(UUser user);
 
 }
