@@ -13,7 +13,6 @@ public class URLPermissionsFilter extends PermissionsAuthorizationFilter {
   public boolean isAccessAllowed(ServletRequest request, ServletResponse response,
       Object mappedValue) {
     Subject subject = getSubject(request, response);
-    System.out.println(subject.getSession().getId());
     boolean isPermitted = false;
     String[] perms = (String[])mappedValue;
     for (String perm : perms) {

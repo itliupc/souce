@@ -19,4 +19,12 @@ public class UserLoginFilter extends FormAuthenticationFilter {
       return false;
     }
   }
+  
+  @Override
+  protected boolean isAccessAllowed(ServletRequest request, ServletResponse response,
+      Object mappedValue) {
+
+    boolean b = super.isAccessAllowed(request, response, mappedValue);
+    return b;
+  }
 }
