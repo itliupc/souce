@@ -52,7 +52,7 @@ public class AppController {
     
     @RequestMapping("/user")
     @ResponseBody
-    public UUser allUser(@RequestParam("username") String username) {
+    public UUser allUser() {
      
       return null;  
     }
