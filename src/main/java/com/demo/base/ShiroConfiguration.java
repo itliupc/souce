@@ -5,23 +5,24 @@ import java.util.Map;
 
 import javax.servlet.Filter;
 
+import org.apache.shiro.cache.ehcache.EhCacheManager;
 import org.apache.shiro.spring.LifecycleBeanPostProcessor;
 import org.apache.shiro.spring.security.interceptor.AuthorizationAttributeSourceAdvisor;
 import org.apache.shiro.spring.web.ShiroFilterFactoryBean;
+import org.apache.shiro.web.mgt.CookieRememberMeManager;
 import org.apache.shiro.web.mgt.DefaultWebSecurityManager;
+import org.apache.shiro.web.servlet.SimpleCookie;
+import org.apache.shiro.web.session.mgt.DefaultWebSessionManager;
 import org.springframework.aop.framework.autoproxy.DefaultAdvisorAutoProxyCreator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.DependsOn;
 
 @Configuration
 public class ShiroConfiguration {
+  
   /**
    * ShiroFilterFactoryBean 处理拦截资源文件问题。
-   * 注意：单独一个ShiroFilterFactoryBean配置是或报错的，以为在
-   * 初始化ShiroFilterFactoryBean的时候需要注入：SecurityManager
-   *
-   * Filter Chain定义说明 1、一个URL可以配置多个Filter，使用逗号分隔 2、当设置多个过滤器时，全部验证通过，才视为通过
-   * 3、部分过滤器可指定参数，如perms，roles
    *
    */
   @Bean
@@ -55,8 +56,9 @@ public class ShiroConfiguration {
       /**数据库查询权限***/
       filterChainDefinitionMap.put("/user", "perms[权限添加]");
 
-      // <!-- 过滤链定义，从上向下顺序执行，一般将 /**放在最为下边 -->:这是一个坑呢，一不小心代码就不好使了;
-      // <!-- authc:所有url都必须认证通过才可以访问; anon:所有url都都可以匿名访问-->
+      // 过滤链定义，从上向下顺序执行，一般将 /**放在最为下边 
+      // authc:所有url都必须认证通过才可以访问; 
+      // anon:所有url都都可以匿名访问
       filterChainDefinitionMap.put("/**", "authc");
 
       shiroFilterFactoryBean.setFilterChainDefinitionMap(filterChainDefinitionMap);
@@ -69,6 +71,13 @@ public class ShiroConfiguration {
       DefaultWebSecurityManager securityManager = new DefaultWebSecurityManager();
       // 设置realm.
       securityManager.setRealm(myShiroRealm());
+      
+      securityManager.setSessionManager(sessionManager());
+      
+      // 用户授权/认证信息Cache, 采用EhCache 缓存 
+      securityManager.setCacheManager(ehCacheManager());
+      // 注入记住我管理器;  
+      securityManager.setRememberMeManager(rememberMeManager()); 
       return securityManager;
   }
 
@@ -80,6 +89,8 @@ public class ShiroConfiguration {
   @Bean
   public MyShiroRealm myShiroRealm() {
       MyShiroRealm myShiroRealm = new MyShiroRealm();
+      //告诉realm,使用credentialsMatcher加密算法类来验证密文
+      //myShiroRealm.setCredentialsMatcher(hashedCredentialsMatcher());
       return myShiroRealm;
   }
   
@@ -103,10 +114,82 @@ public class ShiroConfiguration {
       return daap;  
   }  
   
-
+  // Shiro生命周期处理器
   @Bean(name = "lifecycleBeanPostProcessor")  
   public LifecycleBeanPostProcessor getLifecycleBeanPostProcessor() {  
       return new LifecycleBeanPostProcessor();  
   }  
   
+  /**
+   * hashedCredentialsMatcher，这个类是为了对密码进行编码的，防止密码在数据库里明码保存， 
+   * 当然在登陆认证的生活，这个类也负责对form里输入的密码进行编码。
+   * @return
+   */
+  /*@Bean(name="credentialsMatcher")
+  public HashedCredentialsMatcher hashedCredentialsMatcher(){
+     HashedCredentialsMatcher hashedCredentialsMatcher = new HashedCredentialsMatcher();
+
+     hashedCredentialsMatcher.setHashAlgorithmName("md5");//散列算法:这里使用MD5算法;
+     hashedCredentialsMatcher.setHashIterations(1);//散列的次数，比如散列两次，相当于 md5(md5(""));
+     //storedCredentialsHexEncoded默认是true，此时用的是密码加密用的是Hex编码；false时用Base64编码
+     hashedCredentialsMatcher.setStoredCredentialsHexEncoded(true);
+
+     return hashedCredentialsMatcher;
+  }*/
+  
+  /**
+   * @see DefaultWebSessionManager
+   * @return
+   */
+  @Bean(name="sessionManager")
+  public DefaultWebSessionManager sessionManager() {
+      DefaultWebSessionManager sessionManager = new DefaultWebSessionManager();
+      sessionManager.setCacheManager(ehCacheManager());
+      sessionManager.setGlobalSessionTimeout(1800000);//超时时间
+      sessionManager.setSessionValidationSchedulerEnabled(true);//定时清除无效的session
+      sessionManager.setDeleteInvalidSessions(true);//删除无效的session
+      sessionManager.setSessionDAO(sessionDao());
+      return sessionManager;
+  }
+  
+  @Bean(name = "sessionDAO")
+  public MySessionDao sessionDao(){
+      MySessionDao mySessionDAO = new MySessionDao();
+      mySessionDAO.setActiveSessionsCacheName("shiro-activeSessionCache");
+      mySessionDAO.setCacheManager(ehCacheManager());
+      return mySessionDAO;
+  }
+  /**
+   * EhCacheManager，缓存管理，用户登陆成功后，把用户信息和权限信息缓存起来，
+   * 然后每次用户请求时，放入用户的session中，如果不设置这个bean，每个请求都会查询一次数据库。
+   * 
+   * @return
+   */
+  @Bean(name = "ehCacheManager")
+  @DependsOn("lifecycleBeanPostProcessor")
+  public EhCacheManager ehCacheManager() {
+      EhCacheManager cacheManager = new EhCacheManager();
+      cacheManager.setCacheManagerConfigFile("classpath:ehcache-shiro.xml");
+      return cacheManager;
+  }
+
+  @Bean(name = "rememberMeCookie")
+  public SimpleCookie rememberMeCookie() {
+      // 这个参数是cookie的名称，对应前端的checkbox的name = rememberMe
+      SimpleCookie simpleCookie = new SimpleCookie("rememberMe");
+      // 记住我cookie生效时间30天 ,单位秒;
+      simpleCookie.setMaxAge(259200);
+      return simpleCookie;
+  }
+  /**
+   * cookie管理对象;
+   * 
+   * @return
+   */
+ @Bean(name = "rememberMeManager")
+  public CookieRememberMeManager rememberMeManager() {
+      CookieRememberMeManager cookieRememberMeManager = new CookieRememberMeManager();
+      cookieRememberMeManager.setCookie(rememberMeCookie());
+      return cookieRememberMeManager;
+  }
 }

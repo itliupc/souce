@@ -56,4 +56,11 @@ public class AppController {
      
       return null;  
     }
+    
+    @RequestMapping("/test")
+    @ResponseBody
+    public String test() {
+     
+      return "test";  
+    }
 }
