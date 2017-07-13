@@ -54,12 +54,13 @@ public class ShiroConfiguration {
       filterChainDefinitionMap.put("/logout", "logout");
       
       /**数据库查询权限***/
-      filterChainDefinitionMap.put("/user", "perms[权限添加]");
+      filterChainDefinitionMap.put("/user", "perms[权限添加1]");
 
       // 过滤链定义，从上向下顺序执行，一般将 /**放在最为下边 
       // authc:所有url都必须认证通过才可以访问; 
       // anon:所有url都都可以匿名访问
       filterChainDefinitionMap.put("/**", "authc");
+      //filterChainDefinitionMap.put("/**", "user");
 
       shiroFilterFactoryBean.setFilterChainDefinitionMap(filterChainDefinitionMap);
       System.out.println("Shiro拦截器工厂类注入成功");

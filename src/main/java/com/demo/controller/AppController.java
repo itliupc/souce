@@ -34,6 +34,11 @@ public class AppController {
       return "index";  
     }
     
+    @RequestMapping("/403")
+    public String forbiddenPage(ModelMap map) {
+      return "403";  
+    }
+    
     
     @RequestMapping(value="/ajaxLogin", method = RequestMethod.POST)
     @ResponseBody
