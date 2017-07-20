@@ -27,4 +27,5 @@ public class UserLoginFilter extends FormAuthenticationFilter {
     boolean b = super.isAccessAllowed(request, response, mappedValue);
     return b;
   }
+  
 }
